@@ -3,16 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { TRIVIA, INGREDIENTS, BOMB, MEMORY_SET } from "@/lib/games";
 
-/* ───────────────────────── Games Hub ───────────────────────── */
-export default function Games({ onEarn }) {
+/* ───────────────────────── Games Hub ─────────────────────────
+   Games are purely to pass the time while waiting. No points. */
+export default function Games() {
   const [game, setGame] = useState(null);
-  const [earned, setEarned] = useState(0);
-
-  function finish(points) {
-    setEarned((e) => e + points);
-    if (points > 0) onEarn?.(points);
-    setGame(null);
-  }
 
   const cards = [
     { id: "catch", title: "Catch the Ingredients", emoji: "🫕", desc: "Tap ingredients into the pot. Dodge the chili-bomb!" },
@@ -20,26 +14,20 @@ export default function Games({ onEarn }) {
     { id: "memory", title: "Memory Match", emoji: "🧠", desc: "Flip and match the hotpot pairs." },
   ];
 
-  if (game === "catch") return <CatchGame onDone={finish} />;
-  if (game === "trivia") return <TriviaGame onDone={finish} />;
-  if (game === "memory") return <MemoryGame onDone={finish} />;
+  if (game === "catch") return <CatchGame onDone={() => setGame(null)} />;
+  if (game === "trivia") return <TriviaGame onDone={() => setGame(null)} />;
+  if (game === "memory") return <MemoryGame onDone={() => setGame(null)} />;
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h3 className="display text-2xl text-cream">Pass the time, earn points</h3>
-        {earned > 0 && (
-          <span className="rounded-full bg-gold/20 px-3 py-1 text-sm font-bold text-gold">
-            +{earned} pts this wait
-          </span>
-        )}
-      </div>
+      <h3 className="display text-2xl text-cream">Pass the time while you wait</h3>
+      <p className="mt-1 text-sm text-cream/55">Just for fun — play while your table gets ready.</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         {cards.map((c) => (
           <button
             key={c.id}
             onClick={() => setGame(c.id)}
-            className="card p-5 text-left transition hover:border-chili/50"
+            className="card p-5 text-left transition hover:border-chili"
           >
             <div className="text-4xl">{c.emoji}</div>
             <div className="mt-3 font-bold text-cream">{c.title}</div>
@@ -57,7 +45,7 @@ function GameShell({ title, children, onQuit }) {
     <div className="card p-6">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="display text-xl text-cream">{title}</h3>
-        <button onClick={onQuit} className="text-sm text-cream/50 hover:text-cream">✕ Quit</button>
+        <button onClick={onQuit} className="text-sm text-cream/50 hover:text-cream">← Back to games</button>
       </div>
       {children}
     </div>
@@ -121,15 +109,14 @@ function CatchGame({ onDone }) {
   }
 
   const done = time === 0;
-  const points = score * 5;
 
   return (
-    <GameShell title="Catch the Ingredients" onQuit={() => onDone(0)}>
+    <GameShell title="Catch the Ingredients" onQuit={onDone}>
       {!running && !done && (
         <div className="py-8 text-center">
           <div className="text-5xl">🫕</div>
           <p className="mx-auto mt-3 max-w-sm text-sm text-cream/60">
-            Tap the ingredients as they appear to drop them in the pot. Each catch = 5 pts.
+            Tap the ingredients as they appear to drop them in the pot.
             Avoid the chili-bomb {BOMB} — it costs you!
           </p>
           <button onClick={start} className="pill-red mt-5">Start · 20s</button>
@@ -147,7 +134,7 @@ function CatchGame({ onDone }) {
               <button
                 key={i}
                 onClick={() => tap(i)}
-                className="flex aspect-square items-center justify-center rounded-2xl border border-white/10 bg-black/40 text-4xl transition active:scale-95"
+                className="flex aspect-square items-center justify-center rounded-2xl border border-chili/20 bg-black/50 text-4xl transition active:scale-95"
               >
                 {c || ""}
               </button>
@@ -159,9 +146,12 @@ function CatchGame({ onDone }) {
       {done && (
         <div className="py-8 text-center">
           <div className="text-5xl">🏆</div>
-          <p className="mt-3 text-lg text-cream">You caught {score} ingredients!</p>
-          <p className="display mt-1 text-4xl text-flame">+{points} pts</p>
-          <button onClick={() => onDone(points)} className="pill-red mt-5">Collect points</button>
+          <p className="display mt-3 text-4xl text-flame">{score} caught!</p>
+          <p className="mt-1 text-sm text-cream/60">Nice reflexes. Your table's almost ready.</p>
+          <div className="mt-5 flex justify-center gap-2">
+            <button onClick={start} className="pill-ghost">Play again</button>
+            <button onClick={onDone} className="pill-red">Back to games</button>
+          </div>
         </div>
       )}
     </GameShell>
@@ -173,6 +163,7 @@ function TriviaGame({ onDone }) {
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState(null);
   const [correct, setCorrect] = useState(0);
+  const [finished, setFinished] = useState(false);
   const q = TRIVIA[i];
   const last = i === TRIVIA.length - 1;
 
@@ -182,13 +173,28 @@ function TriviaGame({ onDone }) {
     if (choice === q.answer) setCorrect((c) => c + 1);
   }
   function next() {
-    if (last) return onDone(correct * 10);
+    if (last) return setFinished(true);
     setI(i + 1);
     setPicked(null);
   }
 
+  if (finished) {
+    return (
+      <GameShell title="Spice Trivia" onQuit={onDone}>
+        <div className="py-8 text-center">
+          <div className="text-5xl">🌶️</div>
+          <p className="display mt-3 text-4xl text-flame">{correct}/{TRIVIA.length}</p>
+          <p className="mt-1 text-sm text-cream/60">
+            {correct === TRIVIA.length ? "A true hotpot master!" : "Not bad — try again while you wait."}
+          </p>
+          <button onClick={onDone} className="pill-red mt-5">Back to games</button>
+        </div>
+      </GameShell>
+    );
+  }
+
   return (
-    <GameShell title={`Spice Trivia · ${i + 1}/${TRIVIA.length}`} onQuit={() => onDone(0)}>
+    <GameShell title={`Spice Trivia · ${i + 1}/${TRIVIA.length}`} onQuit={onDone}>
       <p className="text-lg font-semibold text-cream">{q.q}</p>
       <div className="mt-4 grid gap-2">
         {q.choices.map((c, idx) => {
@@ -203,7 +209,7 @@ function TriviaGame({ onDone }) {
                   ? "border-green-500/60 bg-green-500/15 text-green-300"
                   : show && idx === picked
                   ? "border-chili/60 bg-chili/15 text-chili"
-                  : "border-white/10 bg-black/30 text-cream/80 hover:border-white/30"
+                  : "border-chili/15 bg-black/40 text-cream/80 hover:border-chili/50"
               }`}
             >
               {c}
@@ -213,8 +219,8 @@ function TriviaGame({ onDone }) {
       </div>
       {picked !== null && (
         <div className="mt-4 flex items-center justify-between">
-          <span className="text-sm text-gold">Score: {correct * 10} pts</span>
-          <button onClick={next} className="pill-red">{last ? "Finish" : "Next →"}</button>
+          <span className="text-sm text-cream/50">{correct} right so far</span>
+          <button onClick={next} className="pill-red">{last ? "See result" : "Next →"}</button>
         </div>
       )}
     </GameShell>
@@ -251,10 +257,9 @@ function MemoryGame({ onDone }) {
   }
 
   const done = matched.length === MEMORY_SET.length;
-  const points = Math.max(20, 80 - (moves - MEMORY_SET.length) * 5);
 
   return (
-    <GameShell title="Memory Match" onQuit={() => onDone(0)}>
+    <GameShell title="Memory Match" onQuit={onDone}>
       {!done ? (
         <>
           <div className="mb-3 text-sm text-cream/60">Moves: {moves} · Matched {matched.length}/{MEMORY_SET.length}</div>
@@ -266,7 +271,7 @@ function MemoryGame({ onDone }) {
                   key={card.id}
                   onClick={() => flip(card)}
                   className={`flex aspect-square items-center justify-center rounded-xl border text-3xl transition ${
-                    isUp ? "border-chili/50 bg-black/50" : "border-white/10 bg-chili/80"
+                    isUp ? "border-chili/50 bg-black/60" : "border-chili/20 bg-chili/80"
                   }`}
                 >
                   {isUp ? card.e : ""}
@@ -278,9 +283,9 @@ function MemoryGame({ onDone }) {
       ) : (
         <div className="py-6 text-center">
           <div className="text-5xl">🎉</div>
-          <p className="mt-3 text-lg text-cream">Matched them all in {moves} moves!</p>
-          <p className="display mt-1 text-4xl text-flame">+{points} pts</p>
-          <button onClick={() => onDone(points)} className="pill-red mt-5">Collect points</button>
+          <p className="display mt-3 text-4xl text-flame">{moves} moves</p>
+          <p className="mt-1 text-sm text-cream/60">All matched! That killed a few minutes nicely.</p>
+          <button onClick={onDone} className="pill-red mt-5">Back to games</button>
         </div>
       )}
     </GameShell>

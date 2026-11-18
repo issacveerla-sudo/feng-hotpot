@@ -5,6 +5,7 @@ import { Header } from "@/app/admin/page";
 import { Stat, BarChart } from "@/components/Charts";
 import { getWaitlist } from "@/lib/analytics";
 import { DEMO_HOURLY } from "@/lib/demo";
+import { sendSms, readyMessage } from "@/lib/notify";
 
 const STATUS_STYLE = {
   waiting: "bg-flame/20 text-flame",
@@ -17,8 +18,24 @@ export default function AdminWaitlist() {
   const [rows, setRows] = useState([]);
   useEffect(() => { getWaitlist().then(setRows); }, []);
 
+  const [toast, setToast] = useState("");
+
   function setStatus(i, status) {
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, status } : row)));
+  }
+
+  async function notify(i) {
+    const row = rows[i];
+    setStatus(i, "notified");
+    const res = await sendSms(row.phone, readyMessage(row.name));
+    setToast(
+      res.ok
+        ? res.simulated
+          ? `Simulated text to ${row.name} (${row.phone}). Add Twilio keys to send for real.`
+          : `✅ Texted ${row.name} that their table is ready.`
+        : `Couldn't text ${row.name}: ${res.error || "error"}`
+    );
+    setTimeout(() => setToast(""), 5000);
   }
 
   const waiting = rows.filter((r) => r.status === "waiting").length;
@@ -28,6 +45,12 @@ export default function AdminWaitlist() {
   return (
     <div>
       <Header title="Waitlist" subtitle="Live queue and today's flow." />
+
+      {toast && (
+        <div className="mb-4 rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-sm text-gold">
+          {toast}
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="Currently waiting" value={waiting} />
@@ -69,7 +92,7 @@ export default function AdminWaitlist() {
                   </td>
                   <td className="p-4 text-right">
                     {r.status === "waiting" && (
-                      <button onClick={() => setStatus(i, "notified")} className="rounded-full bg-gold/20 px-3 py-1 text-xs font-semibold text-gold hover:bg-gold/30">
+                      <button onClick={() => notify(i)} className="rounded-full bg-gold/20 px-3 py-1 text-xs font-semibold text-gold hover:bg-gold/30">
                         Text "ready"
                       </button>
                     )}
