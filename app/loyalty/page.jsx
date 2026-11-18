@@ -4,18 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import { REWARDS, TIERS, tierForPoints } from "@/lib/menu";
+import { TIERS, tierForPoints } from "@/lib/menu";
+import { getRewards } from "@/lib/content";
 import { hasSupabase } from "@/lib/supabaseClient";
-import {
-  loadMember,
-  signUp,
-  signIn,
-  signOut,
-  redeemReward,
-} from "@/lib/loyalty";
+import { loadMember, signUp, signIn, signOut, redeemReward } from "@/lib/loyalty";
+import { claimCode } from "@/lib/codes";
 
 export default function LoyaltyPage() {
   const [member, setMember] = useState(null);
+  const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState("signup");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -23,12 +20,12 @@ export default function LoyaltyPage() {
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
-    setMember(await loadMember());
+    const [m, r] = await Promise.all([loadMember(), getRewards()]);
+    setMember(m);
+    setRewards(r);
     setLoading(false);
   }
-  useEffect(() => {
-    refresh();
-  }, []);
+  useEffect(() => { refresh(); }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -51,32 +48,48 @@ export default function LoyaltyPage() {
     refresh();
   }
 
+  async function doClaim(code) {
+    const res = await claimCode(code);
+    if (res.ok) setMsg(`🎉 +${res.points} points added!`);
+    else setMsg(res.error || "Couldn't claim that code");
+    refresh();
+    return res;
+  }
+
   return (
     <main className="bg-ember-field min-h-screen">
       <SiteNav />
       <section className="mx-auto max-w-5xl px-4 pb-20 pt-8">
         {!hasSupabase && (
           <div className="mb-6 rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-center text-sm text-gold">
-            Demo mode — running on sample data. Connect Supabase to go live.
+            Demo mode — try codes HOTPOT50, WELCOME100, MALA25. Connect Supabase to go live.
           </div>
         )}
 
         {loading ? (
           <div className="py-24 text-center text-cream/50">Loading…</div>
         ) : member ? (
-          <Dashboard member={member} onRedeem={doRedeem} onSignOut={async () => { await signOut(); refresh(); }} busy={busy} msg={msg} />
+          <Dashboard
+            member={member}
+            rewards={rewards}
+            onRedeem={doRedeem}
+            onClaim={doClaim}
+            onSignOut={async () => { await signOut(); refresh(); }}
+            busy={busy}
+            msg={msg}
+          />
         ) : (
           <div className="mx-auto max-w-md">
             <div className="text-center">
               <h1 className="display text-5xl text-cream">Join the Legend</h1>
               <p className="mt-3 text-cream/60">
-                Earn points on every visit and every game. Unlock free beef, broth
-                upgrades and skip-the-line passes.
+                Earn points on every visit. Eating in? Grab your receipt code and claim
+                points right here — unlock free beef, broth upgrades and skip-the-line passes.
               </p>
             </div>
 
             <div className="card mt-8 p-6">
-              <div className="mb-5 flex rounded-full border border-white/10 p-1">
+              <div className="mb-5 flex rounded-full border border-chili/20 p-1">
                 {["signup", "login"].map((m) => (
                   <button
                     key={m}
@@ -119,13 +132,41 @@ function Field({ label, value, onChange, type = "text" }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required
-        className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-cream outline-none focus:border-chili"
+        className="mt-1 w-full rounded-xl border border-chili/20 bg-black/50 px-4 py-3 text-cream outline-none focus:border-chili"
       />
     </label>
   );
 }
 
-function Dashboard({ member, onRedeem, onSignOut, busy, msg }) {
+function ClaimBox({ onClaim }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function go(e) {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setBusy(true);
+    const res = await onClaim(code);
+    setBusy(false);
+    if (res?.ok) setCode("");
+  }
+  return (
+    <div className="card p-6">
+      <div className="text-xs font-bold uppercase tracking-widest text-flame">Ate in? Claim your points</div>
+      <p className="mt-1 text-sm text-cream/55">Enter the code from your receipt to add points — no online order needed.</p>
+      <form onSubmit={go} className="mt-4 flex gap-2">
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="FH-XXXXXX"
+          className="flex-1 rounded-xl border border-chili/20 bg-black/50 px-4 py-3 font-mono uppercase tracking-wider text-cream outline-none focus:border-chili"
+        />
+        <button disabled={busy} className="pill-red disabled:opacity-60">{busy ? "…" : "Claim"}</button>
+      </form>
+    </div>
+  );
+}
+
+function Dashboard({ member, rewards, onRedeem, onClaim, onSignOut, busy, msg }) {
   const tier = tierForPoints(member.points);
   const idx = TIERS.findIndex((t) => t.name === tier.name);
   const next = TIERS[idx + 1];
@@ -144,7 +185,6 @@ function Dashboard({ member, onRedeem, onSignOut, busy, msg }) {
       </div>
 
       <div className="mt-6 grid gap-5 md:grid-cols-[1.2fr_1fr]">
-        {/* points card */}
         <div className="card p-7">
           <div className="flex items-center gap-2">
             <span className="heat-dot" style={{ background: tier.color }} />
@@ -166,29 +206,16 @@ function Dashboard({ member, onRedeem, onSignOut, busy, msg }) {
           ) : (
             <div className="mt-5 text-sm text-gold">You're a Legend. Top tier unlocked. 🔥</div>
           )}
-          <Link href="/waitlist" className="pill-ghost mt-6">Play games to earn more →</Link>
         </div>
 
-        {/* quick stats */}
-        <div className="grid gap-5">
-          <div className="card p-6">
-            <div className="text-xs font-bold uppercase tracking-widest text-flame">Visits</div>
-            <div className="display mt-1 text-4xl text-cream">{member.visits ?? 0}</div>
-          </div>
-          <div className="card p-6">
-            <div className="text-xs font-bold uppercase tracking-widest text-flame">Member since</div>
-            <div className="mt-1 text-lg text-cream">
-              {member.created_at ? new Date(member.created_at).toLocaleDateString() : "Today"}
-            </div>
-          </div>
-        </div>
+        <ClaimBox onClaim={onClaim} />
       </div>
 
       {msg && <p className="mt-5 rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-center text-sm text-gold">{msg}</p>}
 
       <h2 className="display mt-10 text-3xl text-cream">Rewards</h2>
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {REWARDS.map((r) => {
+        {rewards.map((r) => {
           const can = member.points >= r.points;
           return (
             <div key={r.id} className="card flex flex-col p-5">
@@ -198,7 +225,7 @@ function Dashboard({ member, onRedeem, onSignOut, busy, msg }) {
                   {r.points}
                 </div>
               </div>
-              <p className="mt-2 flex-1 text-sm text-cream/55">{r.desc}</p>
+              <p className="mt-2 flex-1 text-sm text-cream/55">{r.description || r.desc}</p>
               <button
                 disabled={!can || busy}
                 onClick={() => onRedeem(r)}

@@ -9,6 +9,14 @@ A full prototype for **Feng Hotpot** (冯校长老火锅, Sunnyvale):
 
 Built with **Next.js + Tailwind + Supabase**, ready to deploy on **Vercel**.
 
+> **Already deployed an earlier version?** To get the v3 features (editable menu, editable rewards, point-claim codes, waitlist reordering) run **`supabase/migration_v3.sql`** once in your Supabase SQL Editor. Fresh projects can just run `supabase/schema.sql` (it already includes everything). SMS waitlist texts use Twilio — see the env vars below.
+
+### v3 owner-dashboard features
+- **Menu editor** (`/admin/menu`) — add/edit/remove dishes, prices, spice level, availability. Changes show on the public menu instantly.
+- **Reward editor** (`/admin/loyalty`) — change what each reward costs or switch it off.
+- **Point codes** (`/admin/codes`) — generate single-use codes to print on receipts; diners redeem them on the Loyalty page to earn points **without ordering online** (Subway-style).
+- **Waitlist reordering** (`/admin/waitlist`) — move parties up/down the queue.
+
 > 💡 **Important:** the app works on **seeded demo data out of the box**, even with no database connected. So your Vercel URL looks great the moment it deploys. Connect Supabase (Part A below) to make it store real signups, waitlist entries, and campaigns.
 
 ---
@@ -68,7 +76,15 @@ Total time: ~15 minutes. Detailed walkthrough below.
    | `NEXT_PUBLIC_SUPABASE_URL` | *(your Project URL from Part A)* |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(your anon public key from Part A)* |
    | `NEXT_PUBLIC_ADMIN_EMAILS` | *(owner email, e.g. `owner@fenghotpot.com`)* |
-   | `NEXT_PUBLIC_ORDER_URL` | *(your Chowbus / online-order link)* |
+   | `NEXT_PUBLIC_ORDER_URL` | *(your Uber Eats / online-order link)* |
+
+   **Optional — real SMS waitlist texts** (leave blank to keep texts simulated). These are **server-side**, so do **not** add the `NEXT_PUBLIC_` prefix:
+
+   | Name | Value |
+   |---|---|
+   | `TWILIO_ACCOUNT_SID` | *(from twilio.com/console)* |
+   | `TWILIO_AUTH_TOKEN` | *(from twilio.com/console)* |
+   | `TWILIO_FROM` | *(your Twilio phone number, e.g. `+14085550123`)* |
 
 4. Click **Deploy**. In ~1 minute you'll get a live URL like `feng-hotpot.vercel.app`. 🎉
 

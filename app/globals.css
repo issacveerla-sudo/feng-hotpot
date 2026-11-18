@@ -8,7 +8,7 @@
 
 html,
 body {
-  background-color: #140a07;
+  background-color: #0b0503;
   color: #f3e9d6;
   -webkit-font-smoothing: antialiased;
 }
@@ -17,13 +17,13 @@ body {
   font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
-/* Warm vignette + flame glow backdrop used across the site */
+/* Black base with deep-red glows used across the site */
 .bg-ember-field {
   background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(242, 121, 43, 0.25), transparent 60%),
-    radial-gradient(900px 500px at 80% 20%, rgba(181, 18, 27, 0.28), transparent 55%),
-    radial-gradient(700px 500px at 10% 60%, rgba(226, 59, 46, 0.18), transparent 55%),
-    #140a07;
+    radial-gradient(1100px 600px at 50% -10%, rgba(181, 18, 27, 0.30), transparent 60%),
+    radial-gradient(900px 500px at 85% 15%, rgba(226, 59, 46, 0.22), transparent 55%),
+    radial-gradient(700px 500px at 8% 70%, rgba(181, 18, 27, 0.18), transparent 55%),
+    #0b0503;
 }
 
 .display {
@@ -47,15 +47,15 @@ body {
   @apply pill bg-chili text-white shadow-pill hover:bg-ember;
 }
 .pill-ghost {
-  @apply pill border border-white/20 bg-black/30 text-cream backdrop-blur hover:border-chili/60 hover:text-white;
+  @apply pill border border-chili/40 bg-black/50 text-cream backdrop-blur hover:border-chili hover:bg-chili/10 hover:text-white;
 }
 
 .card {
-  @apply rounded-2xl border border-white/10 bg-charcoal/70 backdrop-blur;
+  @apply rounded-2xl border border-chili/20 bg-black/60 backdrop-blur;
 }
 
 .panel {
-  @apply rounded-2xl border border-white/10 bg-white/[0.03];
+  @apply rounded-2xl border border-chili/15 bg-black/40;
 }
 
 /* thin scrollbar for tables */

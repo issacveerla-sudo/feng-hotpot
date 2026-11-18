@@ -1,6 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import { MENU } from "@/lib/menu";
+import { getMenu } from "@/lib/content";
 import { ORDER_URL } from "@/lib/supabaseClient";
 
 function Heat({ level }) {
@@ -14,9 +17,10 @@ function Heat({ level }) {
   );
 }
 
-export const metadata = { title: "Menu · Feng Hotpot" };
-
 export default function MenuPage() {
+  const [menu, setMenu] = useState(null);
+  useEffect(() => { getMenu().then(setMenu); }, []);
+
   return (
     <main className="bg-ember-field min-h-screen">
       <SiteNav />
@@ -32,33 +36,37 @@ export default function MenuPage() {
       </section>
 
       <section className="mx-auto max-w-5xl space-y-10 px-4 py-10">
-        {MENU.map((cat) => (
-          <div key={cat.category} className="card p-6 md:p-8">
-            <div className="flex items-baseline justify-between border-b border-white/10 pb-4">
-              <h2 className="display text-2xl text-flame">{cat.category}</h2>
-              <span className="text-sm text-cream/50">{cat.blurb}</span>
-            </div>
-            <div className="mt-5 grid gap-x-10 gap-y-5 md:grid-cols-2">
-              {cat.items.map((it) => (
-                <div key={it.name} className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="font-semibold text-cream">
-                      {it.name}
-                      <Heat level={it.heat} />
-                      {it.tag && (
-                        <span className="ml-2 rounded-full bg-chili/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-chili">
-                          {it.tag}
-                        </span>
-                      )}
+        {!menu ? (
+          <div className="py-16 text-center text-cream/40">Loading menu…</div>
+        ) : (
+          menu.map((cat) => (
+            <div key={cat.category} className="card p-6 md:p-8">
+              <div className="flex items-baseline justify-between border-b border-chili/20 pb-4">
+                <h2 className="display text-2xl text-flame">{cat.category}</h2>
+                <span className="text-sm text-cream/50">{cat.blurb}</span>
+              </div>
+              <div className="mt-5 grid gap-x-10 gap-y-5 md:grid-cols-2">
+                {cat.items.map((it) => (
+                  <div key={it.id || it.name} className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="font-semibold text-cream">
+                        {it.name}
+                        <Heat level={it.heat} />
+                        {it.tag && (
+                          <span className="ml-2 rounded-full bg-chili/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-chili">
+                            {it.tag}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 text-sm text-cream/55">{it.desc}</div>
                     </div>
-                    <div className="mt-0.5 text-sm text-cream/55">{it.desc}</div>
+                    <div className="shrink-0 font-bold text-gold">{it.price}</div>
                   </div>
-                  <div className="shrink-0 font-bold text-gold">{it.price}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </section>
 
       <SiteFooter />
