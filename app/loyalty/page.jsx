@@ -70,7 +70,7 @@ export default function LoyaltyPage() {
             <div className="text-center">
               <h1 className="display text-5xl text-cream">Join the Legend</h1>
               <p className="mt-3 text-cream/60">
-                Earn points on every visit and every game. Unlock free beef, broth
+                Earn points on every visit. Unlock free beef, broth
                 upgrades and skip-the-line passes.
               </p>
             </div>
@@ -166,7 +166,7 @@ function Dashboard({ member, onRedeem, onSignOut, busy, msg }) {
           ) : (
             <div className="mt-5 text-sm text-gold">You're a Legend. Top tier unlocked. 🔥</div>
           )}
-          <Link href="/waitlist" className="pill-ghost mt-6">Play games to earn more →</Link>
+          <Link href="/menu" className="pill-ghost mt-6">Browse the menu →</Link>
         </div>
 
         {/* quick stats */}

@@ -117,6 +117,23 @@ create policy "influencers auth" on public.influencers
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- ════════════════════════════════════════════════════════════════
+-- Base role grants
+-- RLS policies sit ON TOP of table privileges. Supabase usually grants
+-- these to anon/authenticated automatically, but if the project's default
+-- grants were ever revoked, new tables have no privilege for the policies
+-- to gate — and every live query fails with "permission denied". These
+-- statements restore the standard grants; the RLS policies above still
+-- decide what each role may actually read or write.
+-- ════════════════════════════════════════════════════════════════
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to anon, authenticated;
+grant usage, select on all sequences in schema public to anon, authenticated;
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to anon, authenticated;
+alter default privileges in schema public
+  grant usage, select on sequences to anon, authenticated;
+
+-- ════════════════════════════════════════════════════════════════
 -- Seed data (so the owner dashboard looks alive immediately)
 -- ════════════════════════════════════════════════════════════════
 insert into public.influencers (handle, name, platform, followers, niche, er, city, fit, status, notes) values
