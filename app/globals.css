@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #140a07;
+  color: #f3e9d6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+/* Warm vignette + flame glow backdrop used across the site */
+.bg-ember-field {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(242, 121, 43, 0.25), transparent 60%),
+    radial-gradient(900px 500px at 80% 20%, rgba(181, 18, 27, 0.28), transparent 55%),
+    radial-gradient(700px 500px at 10% 60%, rgba(226, 59, 46, 0.18), transparent 55%),
+    #140a07;
+}
+
+.display {
+  font-family: "Bagel Fat One", cursive;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+}
+
+/* Cream drip-ish text with warm shadow to echo the reference art */
+.hero-type {
+  color: #f3e9d6;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.25),
+    0 10px 40px rgba(242, 121, 43, 0.35);
+}
+
+.pill {
+  @apply inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition;
+}
+.pill-red {
+  @apply pill bg-chili text-white shadow-pill hover:bg-ember;
+}
+.pill-ghost {
+  @apply pill border border-white/20 bg-black/30 text-cream backdrop-blur hover:border-chili/60 hover:text-white;
+}
+
+.card {
+  @apply rounded-2xl border border-white/10 bg-charcoal/70 backdrop-blur;
+}
+
+.panel {
+  @apply rounded-2xl border border-white/10 bg-white/[0.03];
+}
+
+/* thin scrollbar for tables */
+.scroll-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
+
+.heat-dot { width: 7px; height: 7px; border-radius: 999px; display: inline-block; }
