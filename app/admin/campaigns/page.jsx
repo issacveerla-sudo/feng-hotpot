@@ -303,9 +303,21 @@ function CampaignDesigner({ audiences, sizeFor, onClose, onUse }) {
               <div className="space-y-3">
                 {plan.variants.map((v, i) => (
                   <div key={i} className="panel p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-cream">{v.name}</span>
-                      <button onClick={() => onUse(v, channel, audience)} className="pill-red text-xs">Use this →</button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <a
+                          href="https://framia.converge.ai/create/"
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => navigator.clipboard?.writeText(v.body)}
+                          className="pill-ghost text-xs"
+                          title="Copies this script and opens Framia to generate a video"
+                        >
+                          🎬 Generate video ↗
+                        </a>
+                        <button onClick={() => onUse(v, channel, audience)} className="pill-red text-xs">Use this →</button>
+                      </div>
                     </div>
                     {channel === "Email" && <div className="mt-2 text-sm text-gold">Subject: {v.subject}</div>}
                     <p className="mt-2 whitespace-pre-wrap text-sm text-cream/80">{v.body}</p>
