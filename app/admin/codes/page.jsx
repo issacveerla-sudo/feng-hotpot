@@ -10,15 +10,28 @@ export default function AdminCodes() {
   const [form, setForm] = useState({ count: 10, points: 100, note: "" });
   const [fresh, setFresh] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
   async function load() { setCodes(await listCodes()); }
   useEffect(() => { load(); }, []);
 
   async function generate() {
     setBusy(true);
+    setErr("");
     const res = await generateCodes(form.count, form.points, form.note);
     setBusy(false);
-    if (res.error) return;
+    if (res && res.error) {
+      setErr(
+        /claim_codes|does not exist|relation/i.test(res.error)
+          ? "The claim_codes table isn't in your database yet — run supabase/migration_v3.sql in the Supabase SQL Editor, then try again."
+          : res.error
+      );
+      return;
+    }
+    if (!Array.isArray(res) || res.length === 0) {
+      setErr("No codes were returned. If you're connected to Supabase, make sure migration_v3.sql has been run.");
+      return;
+    }
     setFresh(res);
     load();
   }
@@ -64,6 +77,9 @@ export default function AdminCodes() {
             <button onClick={generate} disabled={busy} className="pill-red w-full !py-3 disabled:opacity-60">
               {busy ? "Generating…" : `Generate ${form.count} codes`}
             </button>
+            {err && (
+              <p className="rounded-xl border border-chili/40 bg-chili/10 px-4 py-3 text-sm text-chili">{err}</p>
+            )}
           </div>
 
           {fresh.length > 0 && (
