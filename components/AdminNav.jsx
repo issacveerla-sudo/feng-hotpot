@@ -7,7 +7,9 @@ import { adminSignOut } from "@/lib/admin";
 const NAV = [
   { href: "/admin", label: "Overview", icon: "📊" },
   { href: "/admin/waitlist", label: "Waitlist", icon: "⏳" },
+  { href: "/admin/menu", label: "Menu", icon: "🍲" },
   { href: "/admin/loyalty", label: "Loyalty", icon: "🎁" },
+  { href: "/admin/codes", label: "Point Codes", icon: "🎟️" },
   { href: "/admin/campaigns", label: "Campaigns", icon: "📣" },
   { href: "/admin/influencers", label: "Influencers", icon: "⭐" },
 ];

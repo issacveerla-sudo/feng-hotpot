@@ -7,8 +7,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#140a07",        // near-black warm base
-        charcoal: "#1d100b",   // slightly lifted panel
+        ink: "#0b0503",        // black base
+        charcoal: "#160b07",   // slightly lifted panel
         ember: "#B5121B",      // deep brand red
         chili: "#E23B2E",      // bright red (buttons)
         flame: "#F2792B",      // orange glow

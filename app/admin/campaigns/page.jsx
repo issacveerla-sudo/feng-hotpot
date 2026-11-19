@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Header } from "@/app/admin/page";
 import { getCampaigns, saveCampaign, getMembers } from "@/lib/analytics";
+import { generatePlan, GOALS } from "@/lib/campaigngen";
 
 const AUDIENCES = ["All members", "Blaze + Legend", "Lapsed (60+ days)", "Spark tier", "Birthdays this month"];
 const TEMPLATES = {
@@ -18,6 +19,14 @@ export default function AdminCampaigns() {
   const [form, setForm] = useState({ name: "", channel: "SMS", audience: "All members", body: "" });
   const [flash, setFlash] = useState("");
   const [sending, setSending] = useState(false);
+  const [designer, setDesigner] = useState(false);
+
+  function useVariant(v, channel, audience) {
+    setForm({ name: v.name, channel, audience, body: v.body });
+    setDesigner(false);
+    setFlash("✨ Draft loaded into the composer — review and send.");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   useEffect(() => {
     getCampaigns().then(setRows);
@@ -55,7 +64,15 @@ export default function AdminCampaigns() {
 
   return (
     <div>
-      <Header title="Campaigns" subtitle="Reach loyalty members with targeted offers." />
+      <Header
+        title="Campaigns"
+        subtitle="Reach loyalty members with targeted offers."
+        right={
+          <button onClick={() => setDesigner(true)} className="pill-red text-sm">
+            ✨ Design a campaign
+          </button>
+        }
+      />
 
       <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
         {/* composer */}
@@ -167,6 +184,147 @@ export default function AdminCampaigns() {
           </table>
         </div>
       </div>
+
+      {designer && (
+        <CampaignDesigner
+          audiences={AUDIENCES}
+          sizeFor={audienceCount}
+          onClose={() => setDesigner(false)}
+          onUse={useVariant}
+        />
+      )}
+    </div>
+  );
+}
+
+function CampaignDesigner({ audiences, sizeFor, onClose, onUse }) {
+  const [goal, setGoal] = useState(GOALS[0].id);
+  const [detail, setDetail] = useState("");
+  const [channel, setChannel] = useState("SMS");
+  const [audience, setAudience] = useState("All members");
+  const [plan, setPlan] = useState(null);
+  const [working, setWorking] = useState(false);
+
+  const goalMeta = GOALS.find((g) => g.id === goal);
+
+  function run() {
+    setWorking(true);
+    setPlan(null);
+    setTimeout(() => {
+      setPlan(generatePlan({ goal, detail, channel, audience, audienceSize: sizeFor(audience) }));
+      setWorking(false);
+    }, 700);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/70 p-4" onClick={onClose}>
+      <div className="card my-8 w-full max-w-2xl p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="display text-xl text-cream">✨ Campaign strategist</h3>
+            <p className="text-xs text-cream/50">Pick a goal — the assistant designs the full strategy and writes the copy.</p>
+          </div>
+          <button onClick={onClose} className="text-cream/40 hover:text-cream">✕</button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-xs text-cream/50">Goal</span>
+            <select value={goal} onChange={(e) => { setGoal(e.target.value); setPlan(null); }}
+              className="mt-1 w-full rounded-xl border border-chili/20 bg-black/50 px-4 py-2.5 text-sm text-cream outline-none focus:border-chili">
+              {GOALS.map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}
+            </select>
+          </label>
+          {goalMeta?.detail && (
+            <label className="block">
+              <span className="text-xs text-cream/50">{goalMeta.detail}</span>
+              <input value={detail} onChange={(e) => setDetail(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-chili/20 bg-black/50 px-4 py-2.5 text-sm text-cream outline-none focus:border-chili" />
+            </label>
+          )}
+          <label className="block">
+            <span className="text-xs text-cream/50">Primary channel</span>
+            <select value={channel} onChange={(e) => setChannel(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-chili/20 bg-black/50 px-4 py-2.5 text-sm text-cream outline-none focus:border-chili">
+              <option>SMS</option><option>Email</option><option>Push</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs text-cream/50">Audience</span>
+            <select value={audience} onChange={(e) => setAudience(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-chili/20 bg-black/50 px-4 py-2.5 text-sm text-cream outline-none focus:border-chili">
+              {audiences.map((a) => <option key={a}>{a}</option>)}
+            </select>
+          </label>
+        </div>
+
+        <button onClick={run} disabled={working} className="pill-red mt-4 w-full !py-3 disabled:opacity-60">
+          {working ? "Designing strategy…" : plan ? "Regenerate plan" : "Design campaign"}
+        </button>
+
+        {plan && (
+          <div className="mt-6 space-y-5">
+            <Section label="Objective"><p className="text-sm text-cream/85">{plan.objective}</p></Section>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Section label="Audience">
+                <p className="text-sm text-cream/85">{plan.audience.segment} · ~{plan.audience.size} members</p>
+                <p className="mt-1 text-xs text-cream/55">{plan.audience.why}</p>
+              </Section>
+              <Section label="Offer">
+                <p className="text-sm text-cream/85">{plan.offer}</p>
+              </Section>
+            </div>
+
+            <Section label="Send schedule">
+              <ol className="space-y-2">
+                {plan.channels.map((c, i) => (
+                  <li key={i} className="flex gap-3 text-sm">
+                    <span className="w-20 shrink-0 font-semibold text-gold">{c.when}</span>
+                    <span className="w-14 shrink-0 text-chili">{c.channel}</span>
+                    <span className="text-cream/75">{c.purpose}</span>
+                  </li>
+                ))}
+              </ol>
+            </Section>
+
+            <Section label="Targets">
+              <div className="flex flex-wrap gap-2">
+                {plan.kpis.map((k) => (
+                  <span key={k.metric} className="rounded-full border border-chili/20 bg-black/40 px-3 py-1 text-xs text-cream/80">
+                    {k.metric}: <span className="text-gold">{k.target}</span>
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-cream/50">{plan.projection}</p>
+            </Section>
+
+            <Section label="Message drafts">
+              <div className="space-y-3">
+                {plan.variants.map((v, i) => (
+                  <div key={i} className="panel p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-cream">{v.name}</span>
+                      <button onClick={() => onUse(v, channel, audience)} className="pill-red text-xs">Use this →</button>
+                    </div>
+                    {channel === "Email" && <div className="mt-2 text-sm text-gold">Subject: {v.subject}</div>}
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-cream/80">{v.body}</p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Section({ label, children }) {
+  return (
+    <div>
+      <div className="mb-2 text-xs font-bold uppercase tracking-widest text-flame">{label}</div>
+      {children}
     </div>
   );
 }
